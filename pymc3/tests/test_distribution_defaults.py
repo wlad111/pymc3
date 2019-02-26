@@ -1,5 +1,5 @@
 from ..model import Model
-from ..distributions import DiscreteUniform, Continuous, Categorical
+from ..distributions import DiscreteUniform, Continuous
 
 import numpy as np
 import pytest
@@ -67,10 +67,3 @@ def test_discrete_uniform_negative():
     with model:
         x = DiscreteUniform('x', lower=-10, upper=0)
     assert model.test_point['x'] == -5
-
-
-def test_categorical_mode():
-    model = Model()
-    with model:
-        x = Categorical('x', p=np.eye(4), shape=4)
-    assert np.allclose(model.test_point['x'], np.arange(4))
