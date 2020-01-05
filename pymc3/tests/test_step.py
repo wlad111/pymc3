@@ -17,7 +17,7 @@ from pymc3.model import Model
 from pymc3.step_methods import (
     NUTS,
     BinaryGibbsMetropolis,
-    CategoricalGibbsMetropolis,
+    CategoricalMetropolis,
     Metropolis,
     Slice,
     CompoundStep,
@@ -569,8 +569,8 @@ class TestStepMethods:  # yield test doesn't work subclassing object
         check = (("x", np.mean, mu, unc / 10.0), ("x", np.std, unc, unc / 10.0))
         with model:
             steps = (
-                CategoricalGibbsMetropolis(model.x, proposal="uniform"),
-                CategoricalGibbsMetropolis(model.x, proposal="proportional"),
+                CategoricalMetropolis(model.x, proposal="uniform"),
+                CategoricalMetropolis(model.x, proposal="proportional"),
             )
         for step in steps:
             trace = sample(8000, tune=0, step=step, start=start, model=model, random_seed=1)
@@ -661,7 +661,7 @@ class TestAssignStepMethods:
         with Model() as model:
             Categorical("y", np.array([0.25, 0.70, 0.05]))
             steps = assign_step_methods(model, [])
-        assert isinstance(steps, CategoricalGibbsMetropolis)
+        assert isinstance(steps, CategoricalMetropolis)
 
     def test_binomial(self):
         """Test binomial distribution is assigned metropolis method."""

@@ -9,7 +9,7 @@ import pymc3 as pm
 from pymc3.theanof import floatX
 
 __all__ = ['Metropolis', 'DEMetropolis', 'BinaryMetropolis', 'BinaryGibbsMetropolis',
-           'CategoricalGibbsMetropolis', 'NormalProposal', 'CauchyProposal',
+           'CategoricalMetropolis', 'NormalProposal', 'CauchyProposal',
            'LaplaceProposal', 'PoissonProposal', 'MultivariateNormalProposal']
 
 # Available proposal distributions for Metropolis
@@ -62,6 +62,12 @@ class MultivariateNormalProposal(Proposal):
             b = np.random.randn(self.n)
             return np.dot(self.chol, b)
 
+class CustomDiscreteProposal:
+    def __init__(self, proposal_func):
+        self.proposal = proposal_func
+
+    def __call__(self, prev):
+        return self.proposal(prev)
 
 class Metropolis(ArrayStepShared):
     """
@@ -375,15 +381,19 @@ class BinaryGibbsMetropolis(ArrayStep):
         return Competence.INCOMPATIBLE
 
 
-class CategoricalGibbsMetropolis(ArrayStep):
+class CategoricalMetropolis(ArrayStep):
     """A Metropolis-within-Gibbs step method optimized for categorical variables.
        This step method works for Bernoulli variables as well, but it is not
        optimized for them, like BinaryGibbsMetropolis is. Step method supports
        two types of proposals: A uniform proposal and a proportional proposal,
        which was introduced by Liu in his 1996 technical report
        "Metropolized Gibbs Sampler: An Improvement".
+
+        In addition, custom discrete proposal is introduced. In this case, parameter 'proposal' must be
+        an instance of CustomDiscreteProposal class.
     """
     name = 'categorical_gibbs_metropolis'
+
 
     def __init__(self, vars, proposal='uniform', order='random', model=None):
 
@@ -421,9 +431,12 @@ class CategoricalGibbsMetropolis(ArrayStep):
         elif proposal == 'proportional':
             # Use the optimized "Metropolized Gibbs Sampler" described in Liu96.
             self.astep = self.astep_prop
+            # Use custom proposal for discrete (categorical) variable
+        elif isinstance(proposal, CustomDiscreteProposal):
+            self.astep = proposal
         else:
             raise ValueError('Argument \'proposal\' should either be ' +
-                    '\'uniform\' or \'proportional\'')
+                             '\'uniform\' or \'proportional\' or instance of \'CustomDiscreteProposal\'')
 
         super().__init__(vars, [model.fastlogp])
 
@@ -454,6 +467,14 @@ class CategoricalGibbsMetropolis(ArrayStep):
         for dim, k in dimcats:
             logp_curr = self.metropolis_proportional(q, logp, logp_curr, dim, k)
 
+        return q
+
+    def astep_custom(self, q0, logp):
+        q_curr = np.copy(q0)
+        logp_curr = logp(q_curr)
+        q_proposed = self.astep(np.copy(q0))
+        logp_prop = logp(q_proposed)
+        q, accepted = metrop_select(logp_prop - logp_curr, q_proposed, q_curr)
         return q
 
     def metropolis_proportional(self, q, logp, logp_curr, dim, k):
@@ -550,7 +571,7 @@ class DEMetropolis(PopulationArrayStepShared):
 
         if S is None:
             S = np.ones(model.ndim)
-        
+
         if proposal_dist is not None:
             self.proposal_dist = proposal_dist(S)
         else:

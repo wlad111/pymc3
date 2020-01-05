@@ -26,7 +26,7 @@ from .step_methods import (
     Metropolis,
     BinaryMetropolis,
     BinaryGibbsMetropolis,
-    CategoricalGibbsMetropolis,
+    CategoricalMetropolis,
     DEMetropolis,
     Slice,
     CompoundStep,
@@ -68,7 +68,7 @@ STEP_METHODS = (
     BinaryMetropolis,
     BinaryGibbsMetropolis,
     Slice,
-    CategoricalGibbsMetropolis,
+    CategoricalMetropolis,
 )
 
 ArrayLike = Union[np.ndarray, List[float]]
