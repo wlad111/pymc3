@@ -13,6 +13,8 @@ import theano.sparse as sparse
 from theano import theano, tensor as tt
 from theano.tensor.var import TensorVariable
 from theano.compile import SharedVariable
+from theano.gof.graph import Variable
+from theano.tests.test_flake8 import ignore
 
 from pymc3.theanof import set_theano_conf, floatX
 import pymc3 as pm
@@ -41,6 +43,9 @@ class PyMC3Variable(TensorVariable):
     def __rmatmul__(self, other):
         return tt.dot(other, self)
 
+class PyMC3CatVariable(Variable):
+    """Class to wrap Theano SharedVariable for non-numeric behavior."""
+    pass
 
 class InstanceMethod:
     """Class for hiding references to instance methods so they can be pickled.
@@ -748,6 +753,7 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
         if self.parent is not None:
             self.named_vars = treedict(parent=self.parent.named_vars)
             self.free_RVs = treelist(parent=self.parent.free_RVs)
+            self.free_Cat_Rvs = treelist(parent=self.parent.free_Cat_RVs)
             self.observed_RVs = treelist(parent=self.parent.observed_RVs)
             self.deterministics = treelist(parent=self.parent.deterministics)
             self.potentials = treelist(parent=self.parent.potentials)
@@ -755,6 +761,7 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
         else:
             self.named_vars = treedict()
             self.free_RVs = treelist()
+            self.free_Cat_Rvs = treelist()
             self.observed_RVs = treelist()
             self.deterministics = treelist()
             self.potentials = treelist()
@@ -795,7 +802,7 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
 
     @property
     def ndim(self):
-        return sum(var.dsize for var in self.free_RVs)
+        return sum(var.dsize for var in self.free_RVs) + sum(var.dsize for var in self.free_Cat_Rvs)
 
     @property
     def logp_array(self):
@@ -851,7 +858,7 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
         """Theano scalar of log-probability of the unobserved random variables
            (excluding deterministic)."""
         with self:
-            factors = [var.logpt for var in self.free_RVs]
+            factors = [var.logpt for var in self.free_RVs] + [var.logpt for var in self.free_Cat_Rvs]
             return tt.sum(factors)
 
     @property
@@ -866,14 +873,14 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
         """List of unobserved random variables used as inputs to the model
         (which excludes deterministics).
         """
-        return self.free_RVs
+        return self.free_RVs + self.free_Cat_Rvs
 
     @property
     def basic_RVs(self):
         """List of random variables the model is defined in terms of
         (which excludes deterministics).
         """
-        return self.free_RVs + self.observed_RVs
+        return self.free_RVs + self.free_Cat_Rvs + self.observed_RVs
 
     @property
     def unobserved_RVs(self):
@@ -912,11 +919,18 @@ class Model(Factor, WithMemoization, metaclass=ContextMeta, context_class='Model
 
         Returns
         -------
-        FreeRV or ObservedRV
+        FreeRV or ObservedRV or FreeCatRV
         """
         name = self.name_for(name)
         if data is None:
-            if getattr(dist, "transform", None) is None:
+            #TODO make condition on distribution to be non-numeric
+
+            if getattr(dist, "cat", None) is not None:
+                with self:
+                    var = FreeCatRV(name=name, distribution=dist,
+                                    total_size=total_size, model=self)
+                    self.free_Cat_Rvs.append(var)
+            elif getattr(dist, "transform", None) is None:
                 with self:
                     var = FreeRV(name=name, distribution=dist,
                                  total_size=total_size, model=self)
@@ -1396,6 +1410,48 @@ class FreeRV(Factor, PyMC3Variable):
         """Convenience attribute to return tag.test_value"""
         return self.tag.test_value
 
+class FreeCatRV(Factor, PyMC3CatVariable):
+    """Unobserved non-numeric random variable."""
+    def __init__(self, type=None, owner=None, index=None, name=None,
+                 distribution=None, total_size=None, model=None):
+        """
+        Parameters
+        ----------
+        type : theano type (optional)
+        owner : theano owner (optional)
+        name : str
+        distribution : Distribution
+        model : Model
+        total_size : scalar Tensor (optional)
+            needed for upscaling logp
+        """
+        if type is None:
+            type = distribution.type
+        super().__init__(type, owner, index, name)
+
+
+        if distribution is not None:
+            self.dshape = tuple(distribution.shape)
+            self.dsize = int(np.prod(distribution.shape))
+            self.distribution = distribution
+            self.tag.test_value = distribution.default
+
+            self.logp_elemwiset = self.distribution.logp(self)
+            # The logp might need scaling in minibatches.
+            # This is done in `Factor`.
+            self.logp_sum_unscaledt = distribution.logp_sum(self)
+            self.logp_nojac_unscaledt = distribution.logp_nojac(self)
+            self.total_size = total_size
+            self.model = model
+            #self.scaling = _get_scaling(total_size, self.shape, self.ndim)
+
+            incorporate_methods(source=distribution, destination=self,
+                                methods=['random'],
+                                wrapper=InstanceMethod)
+            @property
+            def init_value(self):
+                """Convenience attribute to return tag.test_value"""
+                return self.tag.test_value
 
 def pandas_to_array(data):
     if hasattr(data, 'values'):  # pandas

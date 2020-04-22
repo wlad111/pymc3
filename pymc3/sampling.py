@@ -19,7 +19,7 @@ from theano.tensor import Tensor
 from .backends.base import BaseTrace, MultiTrace
 from .backends.ndarray import NDArray
 from .distributions.distribution import draw_values
-from .model import modelcontext, Point, all_continuous, Model
+from .model import modelcontext, Point, all_continuous, Model, FreeCatRV
 from .step_methods import (
     NUTS,
     HamiltonianMC,
@@ -531,7 +531,10 @@ def _check_start_shape(model, start):
     e = ""
     for var in model.vars:
         if var.name in start.keys():
-            var_shape = var.shape.tag.test_value
+            if isinstance(var, FreeCatRV):
+                var_shape = var.shape
+            else:
+                var_shape = var.shape.tag.test_value
             start_var_shape = np.shape(start[var.name])
             if start_var_shape:
                 if not np.array_equal(var_shape, start_var_shape):

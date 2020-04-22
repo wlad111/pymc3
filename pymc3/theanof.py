@@ -42,6 +42,9 @@ def inputvars(a):
     """
     return [v for v in inputs(makeiter(a)) if isinstance(v, tt.TensorVariable)]
 
+def input_cat_vars(a):
+    return [v for v in inputs(makeiter(a)) if isinstance(v, theano.compile.SharedVariable)]
+
 
 def cont_inputs(f):
     """

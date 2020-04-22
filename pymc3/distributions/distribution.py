@@ -3,6 +3,7 @@ import numbers
 import numpy as np
 import theano.tensor as tt
 from theano import function
+from theano.compile.ops import as_op
 import theano
 from ..memoize import memoize
 from ..model import (
@@ -17,7 +18,7 @@ from .shape_utils import (
 )
 
 __all__ = ['DensityDist', 'Distribution', 'Continuous', 'Discrete',
-           'NoDistribution', 'TensorType', 'draw_values', 'generate_samples']
+           'NoDistribution', 'TensorType', 'draw_values', 'generate_samples', 'WeightedScoreDistribution']
 
 
 class _Unpickling:
@@ -58,12 +59,15 @@ class Distribution:
         return dist
 
     def __init__(self, shape, dtype, testval=None, defaults=(),
-                 transform=None, broadcastable=None):
+                 transform=None, broadcastable=None, cat=None):
         self.shape = np.atleast_1d(shape)
         if False in (np.floor(self.shape) == self.shape):
             raise TypeError("Expected int elements in shape")
         self.dtype = dtype
-        self.type = TensorType(self.dtype, self.shape, broadcastable)
+        if cat is None:
+            self.type = TensorType(self.dtype, self.shape, broadcastable)
+        else:
+            self.type = theano.gof.type.Generic()
         self.testval = testval
         self.defaults = defaults
         self.transform = transform
@@ -132,6 +136,7 @@ def TensorType(dtype, shape, broadcastable=None):
     return tt.TensorType(str(dtype), broadcastable)
 
 
+
 class NoDistribution(Distribution):
 
     def __init__(self, shape, dtype, testval=None, defaults=(), transform=None, parent_dist=None,
@@ -161,6 +166,31 @@ class NoDistribution(Distribution):
         TensorVariable
         """
         return tt.zeros_like(x)
+
+class WeightedScoreDistribution(Distribution):
+    def __init__(self,
+                 scorer,
+                 weighting,
+                 shape=(),
+                 dtype=None,
+                 testval='',
+                 default_val=None,
+                 *args,
+                 **kwargs):
+        super().__init__(shape, dtype, testval, *args, **kwargs)
+        self.scorer = scorer
+        self.weights = weighting
+        self.cat = True
+        self.default = default_val
+
+
+    @as_op(itypes=[theano.gof.generic], otypes=[tt.dscalar])
+    def pr(self, value):
+        score = int(self.scorer(value))
+        return self.weights[score]
+
+    def logp(self, value):
+        return tt.log(self.weights[self.pr(value)])
 
 
 class Discrete(Distribution):

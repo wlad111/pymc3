@@ -57,6 +57,7 @@ from .distribution import NoDistribution
 from .distribution import TensorType
 from .distribution import draw_values
 from .distribution import generate_samples
+from .distribution import WeightedScoreDistribution
 
 from .simulator import Simulator
 
@@ -123,6 +124,7 @@ __all__ = ['Uniform',
            'OrderedLogistic',
            'DensityDist',
            'Distribution',
+           'WeightedScoreDistribution',
            'Continuous',
            'Discrete',
            'NoDistribution',

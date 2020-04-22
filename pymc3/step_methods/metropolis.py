@@ -4,13 +4,16 @@ import theano
 import scipy.linalg
 
 from ..distributions import draw_values
-from .arraystep import ArrayStepShared, PopulationArrayStepShared, ArrayStep, metrop_select, Competence
+from  ..theanof import input_cat_vars
+from .arraystep import ArrayStepShared, PopulationArrayStepShared, ArrayStep, metrop_select, Competence, BlockedStep
+from ..blocking import ArrayOrdering, DictToArrayBijection
 import pymc3 as pm
 from pymc3.theanof import floatX
 
 __all__ = ['Metropolis', 'DEMetropolis', 'BinaryMetropolis', 'BinaryGibbsMetropolis',
            'CategoricalMetropolis', 'NormalProposal', 'CauchyProposal',
-           'LaplaceProposal', 'PoissonProposal', 'MultivariateNormalProposal']
+           'LaplaceProposal', 'PoissonProposal', 'MultivariateNormalProposal', 'GenericCatMetropolis']
+
 
 # Available proposal distributions for Metropolis
 
@@ -62,12 +65,14 @@ class MultivariateNormalProposal(Proposal):
             b = np.random.randn(self.n)
             return np.dot(self.chol, b)
 
+
 class CustomDiscreteProposal:
     def __init__(self, proposal_func):
         self.proposal = proposal_func
 
     def __call__(self, prev):
         return self.proposal(prev)
+
 
 class Metropolis(ArrayStepShared):
     """
@@ -382,22 +387,22 @@ class BinaryGibbsMetropolis(ArrayStep):
 
 
 class CategoricalMetropolis(ArrayStep):
+    #TODO make special class for generic simulation
     """A Metropolis-within-Gibbs step method optimized for categorical variables.
        This step method works for Bernoulli variables as well, but it is not
        optimized for them, like BinaryGibbsMetropolis is. Step method supports
        two types of proposals: A uniform proposal and a proportional proposal,
        which was introduced by Liu in his 1996 technical report
        "Metropolized Gibbs Sampler: An Improvement".
-
         In addition, custom discrete proposal is introduced. In this case, parameter 'proposal' must be
         an instance of CustomDiscreteProposal class.
     """
     name = 'categorical_gibbs_metropolis'
 
-
     def __init__(self, vars, proposal='uniform', order='random', model=None):
 
         model = pm.modelcontext(model)
+        cat_vars = input_cat_vars(vars)
         vars = pm.inputvars(vars)
 
         dimcats = []
@@ -407,19 +412,26 @@ class CategoricalMetropolis(ArrayStep):
         # categories, we will have dimcats = [(0, M), (1, M), (2, N), (3, N), (4, N)].
         for v in vars:
             distr = getattr(v.distribution, 'parent_dist', v.distribution)
+            is_weighted = isinstance(distr, pm.WeightedScoreDistribution)
             if isinstance(distr, pm.Categorical):
                 k = draw_values([distr.k])[0]
             elif isinstance(distr, pm.Bernoulli) or (v.dtype in pm.bool_types):
                 k = 2
+            elif is_weighted:
+                k = None
             else:
-                raise ValueError('All variables must be categorical or binary' +
+                raise ValueError('All variables must be categorical or binary or instance of WeightedScoreDistribution' +
                                  'for CategoricalGibbsMetropolis')
-            start = len(dimcats)
-            dimcats += [(dim, k) for dim in range(start, start + v.dsize)]
+            if not is_weighted:
+                start = len(dimcats)
+                dimcats += [(dim, k) for dim in range(start, start + v.dsize)]
+
+
 
         if order == 'random':
             self.shuffle_dims = True
             self.dimcats = dimcats
+
         else:
             if sorted(order) != list(range(len(dimcats))):
                 raise ValueError('Argument \'order\' has to be a permutation')
@@ -433,7 +445,7 @@ class CategoricalMetropolis(ArrayStep):
             self.astep = self.astep_prop
             # Use custom proposal for discrete (categorical) variable
         elif isinstance(proposal, CustomDiscreteProposal):
-            self.astep = proposal
+            self.astep = self.astep_custom
         else:
             raise ValueError('Argument \'proposal\' should either be ' +
                              '\'uniform\' or \'proportional\' or instance of \'CustomDiscreteProposal\'')
@@ -489,7 +501,7 @@ class CategoricalMetropolis(ArrayStep):
         probs = softmax(log_probs)
         prob_curr, probs[given_cat] = probs[given_cat], 0.0
         probs /= (1.0 - prob_curr)
-        proposed_cat = nr.choice(candidates, p = probs)
+        proposed_cat = nr.choice(candidates, p=probs)
         accept_ratio = (1.0 - prob_curr) / (1.0 - probs[proposed_cat])
         if not np.isfinite(accept_ratio) or nr.uniform() >= accept_ratio:
             q[dim] = given_cat
@@ -512,6 +524,31 @@ class CategoricalMetropolis(ArrayStep):
         elif isinstance(distribution, pm.Bernoulli) or (var.dtype in pm.bool_types):
             return Competence.COMPATIBLE
         return Competence.INCOMPATIBLE
+
+
+class GenericCatMetropolis(BlockedStep):
+
+    def __init__(self, vars, proposal,  model=None):
+        model = pm.modelcontext(model)
+        cat_vars = input_cat_vars(vars)
+        for v in cat_vars:
+            distr = getattr(v.distribution, 'parent_dist', v.distribution)
+            is_weighted = isinstance(distr, pm.WeightedScoreDistribution)
+
+            if not is_weighted:
+                raise ValueError('All variables must have weighted score distribution.')
+
+        self.proposal = proposal
+        self.vars = vars
+
+    def astep(self, q0, logp):
+        q_curr = np.copy(q0)
+        logp_curr = logp(q_curr)
+        q_proposed = self.proposal(q0)
+        logp_prop = logp(q_proposed)
+        q, accepted = metrop_select(logp_prop - logp_curr, q_proposed, q_curr)
+        return q
+
 
 
 class DEMetropolis(PopulationArrayStepShared):
@@ -646,7 +683,7 @@ def sample_except(limit, excluded):
 
 def softmax(x):
     e_x = np.exp(x - np.max(x))
-    return e_x / np.sum(e_x, axis = 0)
+    return e_x / np.sum(e_x, axis=0)
 
 
 def delta_logp(logp, vars, shared):

@@ -1,6 +1,6 @@
 from .compound import CompoundStep
 from ..model import modelcontext
-from ..theanof import inputvars
+from ..theanof import inputvars, input_cat_vars
 from ..blocking import ArrayOrdering, DictToArrayBijection
 import numpy as np
 from numpy.random import uniform
@@ -49,8 +49,8 @@ class BlockedStep:
             vars = model.vars
 
         # get the actual inputs from the vars
-        vars = inputvars(vars)
-
+        #TODO categorical variables here or in special function?
+        vars = inputvars(vars) + input_cat_vars(vars)
         if len(vars) == 0:
             raise ValueError('No free random variables to sample.')
 
