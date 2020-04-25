@@ -45,5 +45,5 @@ y = shared(x)
 
 with pm.Model() as model:
     s = pm.WeightedScoreDistribution('S', scorer=dna_state.score, weighting=np.array([2]*5), cat=True, default_val='AAAA')
-    trace = pm.sample(2000, cores=1, start={'S':['AAAA']},
+    trace = pm.sample(2000, cores=1, start={'S':'AAAA'},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal))

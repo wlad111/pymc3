@@ -3,7 +3,7 @@ import numbers
 import numpy as np
 import theano.tensor as tt
 from theano import function
-from theano.compile.ops import as_op
+from theano.compile.ops import as_op, FromFunctionOp
 import theano
 from ..memoize import memoize
 from ..model import (
@@ -183,14 +183,12 @@ class WeightedScoreDistribution(Distribution):
         self.cat = True
         self.default = default_val
 
-
-    @as_op(itypes=[theano.gof.generic], otypes=[tt.dscalar])
-    def pr(self, value):
-        score = int(self.scorer(value))
-        return self.weights[score]
+    def get_pr(self, value):
+        return self.weights[int(self.scorer(value))]
 
     def logp(self, value):
-        return tt.log(self.weights[self.pr(value)])
+        scoreOp = FromFunctionOp(fn=self.get_pr, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
+        return tt.log(scoreOp(value))
 
 
 class Discrete(Distribution):

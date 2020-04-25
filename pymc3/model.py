@@ -12,7 +12,7 @@ import scipy.sparse as sps
 import theano.sparse as sparse
 from theano import theano, tensor as tt
 from theano.tensor.var import TensorVariable
-from theano.compile import SharedVariable
+from theano.compile import SharedVariable, as_op, FromFunctionOp
 from theano.gof.graph import Variable
 from theano.tests.test_flake8 import ignore
 
@@ -1410,6 +1410,7 @@ class FreeRV(Factor, PyMC3Variable):
         """Convenience attribute to return tag.test_value"""
         return self.tag.test_value
 
+
 class FreeCatRV(Factor, PyMC3CatVariable):
     """Unobserved non-numeric random variable."""
     def __init__(self, type=None, owner=None, index=None, name=None,
@@ -1435,6 +1436,7 @@ class FreeCatRV(Factor, PyMC3CatVariable):
             self.dsize = int(np.prod(distribution.shape))
             self.distribution = distribution
             self.tag.test_value = distribution.default
+
 
             self.logp_elemwiset = self.distribution.logp(self)
             # The logp might need scaling in minibatches.
