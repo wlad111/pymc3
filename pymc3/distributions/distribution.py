@@ -184,7 +184,8 @@ class WeightedScoreDistribution(Distribution):
         self.default = default_val
 
     def get_pr(self, value):
-        return self.weights[int(self.scorer(value))]
+        res = np.array(self.weights[int(self.scorer(value))]).astype('float64')
+        return res
 
     def logp(self, value):
         scoreOp = FromFunctionOp(fn=self.get_pr, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)

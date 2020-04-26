@@ -15,12 +15,14 @@ class dna_state:
         dna_state.state_fixed = ["A"] * dna_state.n_letters
 
     def score(state):
+        state = state[0]
         return dna_state.n_letters - dna_state.n_letters * hamming(dna_state.state_fixed, list(state))
 
     def proposal(state):
         pos = np.random.choice(a=dna_state.n_letters, size=1)
-        state_new = np.copy(state)
-        state_new[pos] = np.random.choice(a=list(dna_state.alphabet), size=1)
+        state_new_l = list(np.copy(state)[0])
+        state_new_l[pos[0]] = np.random.choice(a=list(dna_state.alphabet), size=1)[0]
+        state_new = np.array(''.join(state_new_l)).reshape(1)
         return state_new
 
 Dna = dna_state(4)
@@ -45,5 +47,6 @@ y = shared(x)
 
 with pm.Model() as model:
     s = pm.WeightedScoreDistribution('S', scorer=dna_state.score, weighting=np.array([2]*5), cat=True, default_val='AAAA')
-    trace = pm.sample(2000, cores=1, start={'S':'AAAA'},
-                      step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal))
+    trace = pm.sample(2000, cores=1, start={'S':['AAAA']},
+                      step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal),
+                      compute_convergence_checks=False)

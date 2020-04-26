@@ -49,7 +49,7 @@ class DictToArrayBijection:
     """
     A mapping between a dict space and an array space
     """
-
+    #TODO implement custom behavior with different dtypes (maybe in special class, not in ArrayStep)
     def __init__(self, ordering, dpoint):
         self.ordering = ordering
         self.dpt = dpoint
@@ -61,7 +61,9 @@ class DictToArrayBijection:
             self.array_dtype = 'float32'
         else:
             self.array_dtype = 'float64'
-
+        if any([x.dtyp == 'generic' for x in ordering.vmap]):
+            var = ordering.vmap[0][0]
+            self.array_dtype = dpoint[var].dtype
     def map(self, dpt):
         """
         Maps value from dict space to array space
@@ -86,7 +88,7 @@ class DictToArrayBijection:
         dpt = self.dpt.copy()
 
         for var, slc, shp, dtyp in self.ordering.vmap:
-            dpt[var] = np.atleast_1d(apt)[slc].reshape(shp).astype(dtyp)
+            dpt[var] = np.atleast_1d(apt)[slc].reshape(shp)#.astype(dtyp)
 
         return dpt
 

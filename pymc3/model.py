@@ -1429,15 +1429,16 @@ class FreeCatRV(Factor, PyMC3CatVariable):
         if type is None:
             type = distribution.type
         super().__init__(type, owner, index, name)
-
-
+        #T
+        self.dtype = 'generic'
         if distribution is not None:
             self.dshape = tuple(distribution.shape)
+            self.shape = self.dshape
             self.dsize = int(np.prod(distribution.shape))
             self.distribution = distribution
-            self.tag.test_value = distribution.default
-
-
+            self.tag.test_value = np.array(distribution.default).reshape(1)
+            self.dshape = self.tag.test_value.shape
+            self.shape = self.dshape
             self.logp_elemwiset = self.distribution.logp(self)
             # The logp might need scaling in minibatches.
             # This is done in `Factor`.

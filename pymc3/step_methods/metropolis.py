@@ -526,7 +526,7 @@ class CategoricalMetropolis(ArrayStep):
         return Competence.INCOMPATIBLE
 
 
-class GenericCatMetropolis(BlockedStep):
+class GenericCatMetropolis(ArrayStep):
 
     def __init__(self, vars, proposal,  model=None):
         model = pm.modelcontext(model)
@@ -540,6 +540,8 @@ class GenericCatMetropolis(BlockedStep):
 
         self.proposal = proposal
         self.vars = vars
+        super().__init__(vars, [model.fastlogp])
+
 
     def astep(self, q0, logp):
         q_curr = np.copy(q0)
