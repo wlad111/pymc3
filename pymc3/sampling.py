@@ -221,7 +221,7 @@ def wang_landau(
     dist = var.distribution
 
     logc = 1
-    logw = dist.weights.
+    logw = dist.weights
     his = np.zeros(11)
 
     point = Point(start, model=model)
@@ -230,6 +230,10 @@ def wang_landau(
         for j in range(draws_per_it):
             point = step.step(point) #or astep()?
             state = point[var]
+
+
+def isflat(his):
+    pass
 
 def sample(
     draws=500,
@@ -403,7 +407,7 @@ def sample(
         wl = kwargs["wl_weights"]
 
         if wl:
-            # call here wang-landau
+            pass# call here wang-landau
 
 
     if chains is None:
