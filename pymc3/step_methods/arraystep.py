@@ -277,3 +277,4 @@ def metrop_select(mr, q, q0):
         return q, True
     else:
         return q0, False
+

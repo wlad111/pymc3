@@ -171,6 +171,7 @@ class WeightedScoreDistribution(Distribution):
     def __init__(self,
                  scorer,
                  weighting,
+                 pfun=None,
                  shape=(),
                  dtype=None,
                  testval='',
@@ -179,17 +180,28 @@ class WeightedScoreDistribution(Distribution):
                  **kwargs):
         super().__init__(shape, dtype, testval, *args, **kwargs)
         self.scorer = scorer
-        self.weights = weighting
+        self.weights = theano.shared(weighting)
         self.cat = True
         self.default = default_val
+        self.p = pfun
 
-    def get_pr(self, value):
-        res = np.array(self.weights[int(self.scorer(value))]).astype('float64')
-        return res
+    def pfun(self, value):
+        if self.p is None:
+            return np.array(1).astype('float64')
+        else:
+            return np.array(self.p(value)).astype('float64')
+
+    def get_score(self, value):
+        return np.array(int(self.scorer(value)))
 
     def logp(self, value):
-        scoreOp = FromFunctionOp(fn=self.get_pr, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
-        return tt.log(scoreOp(value))
+        probOp = FromFunctionOp(fn=self.pfun, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
+        probt = probOp(value)
+
+        scoreOp = FromFunctionOp(fn=self.get_score, itypes=[theano.gof.generic], otypes=[tt.lscalar], infer_shape=None)
+        scoret = scoreOp(value)
+
+        return tt.log(self.weights[scoret]) + tt.log(probt)
 
 
 class Discrete(Distribution):

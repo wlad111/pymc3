@@ -8,8 +8,8 @@ from theano import *
 class dna_state:
     alphabet = frozenset("ATGC")
 
-    state_fixed = ["A"] * 4
-    n_letters = 4
+    state_fixed = ["A"] * 10
+    n_letters = 10
     def __init__(self, length):
         dna_state.n_letters = length
         dna_state.state_fixed = ["A"] * dna_state.n_letters
@@ -25,13 +25,13 @@ class dna_state:
         state_new = np.array(''.join(state_new_l)).reshape(1)
         return state_new
 
-Dna = dna_state(4)
+
+Dna = dna_state(10)
 
 A = ["A"] * 10
 
 
 state = A
-
 
 
 def weightingFunc(score):
@@ -46,7 +46,12 @@ x = np.array(['AAAA'])
 y = shared(x)
 
 with pm.Model() as model:
-    s = pm.WeightedScoreDistribution('S', scorer=dna_state.score, weighting=np.array([2]*5), cat=True, default_val='AAAA')
-    trace = pm.sample(2000, cores=1, start={'S':['AAAA']},
+    #x = pm.Normal('x', mu=100500, sigma=42)
+    #trace = pm.sample(1000)
+    #weights = wang_landau(...)
+    s = pm.WeightedScoreDistribution('S', scorer=dna_state.score, weighting=np.array([2]*11), cat=True, default_val='AAAAAAAAAA')
+    trace = pm.sample(100000, cores=1, start={'S':['AAAAAAAAAA']},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal),
-                      compute_convergence_checks=False)
+                    compute_convergence_checks=False, chains=1)
+
+print(trace['S'])

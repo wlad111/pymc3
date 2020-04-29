@@ -210,6 +210,27 @@ def _print_step_hierarchy(s, level=0):
         _log.info(">" * level + "{}: [{}]".format(s.__class__.__name__, varnames))
 
 
+def wang_landau(
+        var, #пока одна переменная
+        wl_iters=10,
+        draws_per_it=10000,
+        step=None,
+        start=None,
+        model=None
+):
+    dist = var.distribution
+
+    logc = 1
+    logw = dist.weights.
+    his = np.zeros(11)
+
+    point = Point(start, model=model)
+
+    for i in range(wl_iters):
+        for j in range(draws_per_it):
+            point = step.step(point) #or astep()?
+            state = point[var]
+
 def sample(
     draws=500,
     step=None,
@@ -375,6 +396,16 @@ def sample(
         warnings.warn(
             "The nchains argument has been deprecated. Use chains instead.", DeprecationWarning
         )
+
+    # Wang-Landau weights estimation
+
+    if "wl_weights" in kwargs:
+        wl = kwargs["wl_weights"]
+
+        if wl:
+            # call here wang-landau
+
+
     if chains is None:
         chains = max(2, cores)
     if isinstance(start, dict):
@@ -555,6 +586,7 @@ def _check_start_shape(model, start):
 
 def _sample_many(draws, chain, chains, start, random_seed, step, **kwargs):
     traces = []
+
     for i in range(chains):
         trace = _sample(
             draws=draws,
@@ -732,6 +764,8 @@ def _iter_sample(
     try:
         step.tune = bool(tune)
         for i in range(draws):
+            if i % 10000 == 0:
+                print(i)
             if i == 0 and hasattr(step, "iter_count"):
                 step.iter_count = 0
             if i == tune:
