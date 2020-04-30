@@ -218,6 +218,9 @@ def wang_landau(
         start=None,
         model=None
 ):
+
+    model = modelcontext(model)
+
     dist = var.distribution
 
     logc = 1
@@ -228,12 +231,36 @@ def wang_landau(
 
     for i in range(wl_iters):
         for j in range(draws_per_it):
+            if isflat(his):
+                logc /= 2
+                his = np.zeros(11)
+                break
             point = step.step(point) #or astep()?
-            state = point[var]
+            state = point[var.name]
+            sc = int(dist.scorer(state))
+            lw = logw.get_value()
+            lw[sc] -= logc
+            logw.set_value(lw)
+            his[sc] += 1
+    lw = logw.get_value()
+    lwmin = lw.min()
+    if lwmin < 0:
+        lw -= lwmin
+    else:
+        lw += lwmin
+    logw.set_value(lw)
+
 
 
 def isflat(his):
-    pass
+    m = his.mean()
+    cond = (his < 20)
+    cond2 = (abs(his - m) > 0.35*m)
+    if any(cond) or any(cond2):
+        return False
+    else:
+        return True
+
 
 def sample(
     draws=500,
@@ -407,8 +434,9 @@ def sample(
         wl = kwargs["wl_weights"]
 
         if wl:
-            pass# call here wang-landau
+            wang_landau(model.free_Cat_Rvs[0], step=step, model=model, start=start)
 
+    kwargs.pop("wl_weights")
 
     if chains is None:
         chains = max(2, cores)

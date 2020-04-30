@@ -52,6 +52,6 @@ with pm.Model() as model:
     s = pm.WeightedScoreDistribution('S', scorer=dna_state.score, weighting=np.array([2]*11), cat=True, default_val='AAAAAAAAAA')
     trace = pm.sample(100000, cores=1, start={'S':['AAAAAAAAAA']},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal),
-                    compute_convergence_checks=False, chains=1)
+                    compute_convergence_checks=False, chains=1, wl_weights=True)
 
 print(trace['S'])
