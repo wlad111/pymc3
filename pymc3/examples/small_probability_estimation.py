@@ -1,5 +1,6 @@
 import sys; print('Python %s on %s' % (sys.version, sys.platform))
-sys.path.insert(0, '/home/vlad/PycharmProjects/pymc3')
+import os
+sys.path.insert(0, '../../')
 print(sys.path)
 
 import numpy as np
