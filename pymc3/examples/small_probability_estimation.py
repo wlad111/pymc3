@@ -1,9 +1,15 @@
+import sys; print('Python %s on %s' % (sys.version, sys.platform))
+sys.path.insert(0, '/home/vlad/PycharmProjects/pymc3')
+print(sys.path)
+
 import numpy as np
 from scipy.spatial.distance import hamming
 
 import pymc3 as pm
 import theano.tensor as tt
 from theano import *
+
+
 
 class dna_state:
     alphabet = frozenset("ATGC")
