@@ -1,6 +1,7 @@
 import sys; print('Python %s on %s' % (sys.version, sys.platform))
 import os
 sys.path.insert(0, '../../')
+sys.path.append('../')
 print(sys.path)
 
 import numpy as np
@@ -9,6 +10,7 @@ from scipy.spatial.distance import hamming
 import pymc3 as pm
 import theano.tensor as tt
 from theano import *
+import estimates
 
 
 
@@ -60,5 +62,11 @@ with pm.Model() as model:
     trace = pm.sample(100000, cores=1, start={'S':['AAAAAAAAAA']},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=dna_state.proposal),
                     compute_convergence_checks=False, chains=1, wl_weights=True)
+    weights = np.exp(s.distribution.weights.get_value())
 
-print(trace['S'])
+
+#add probability estimation
+#TODO optimize it
+score_trace = np.array([dna_state.score(x) for x in trace['S']]).astype('int32')
+print(estimates.estimate_between(score_trace,  weights, 9, 11))
+
