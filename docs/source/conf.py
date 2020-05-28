@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# pymc3 documentation build configuration file, created by
+# pymc3_ext documentation build configuration file, created by
 # sphinx-quickstart on Sat Dec 26 14:40:23 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -16,7 +16,7 @@
 import sys
 import os
 
-import pymc3
+import pymc3_ext
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -80,7 +80,7 @@ author = "PyMC developers"
 # built documents.
 #
 # The short X.Y version.
-version = pymc3.__version__
+version = pymc3_ext.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -260,7 +260,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "pymc3.tex", "PyMC3 Documentation", "PyMC developers", "manual")
+    (master_doc, "pymc3_ext.tex", "PyMC3 Documentation", "PyMC developers", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -288,7 +288,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pymc3", "pymc3 Documentation", [author], 1)]
+man_pages = [(master_doc, "pymc3_ext", "pymc3_ext Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -302,10 +302,10 @@ man_pages = [(master_doc, "pymc3", "pymc3 Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "pymc3",
-        "pymc3 Documentation",
+        "pymc3_ext",
+        "pymc3_ext Documentation",
         author,
-        "pymc3",
+        "pymc3_ext",
         "One line description of project.",
         "Miscellaneous",
     )

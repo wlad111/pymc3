@@ -4,7 +4,7 @@ from os.path import realpath, dirname, join
 from setuptools import setup, find_packages
 import re
 
-DISTNAME = 'pymc3'
+DISTNAME = 'pymc3_ext'
 DESCRIPTION = "Probabilistic Programming in Python: Bayesian Modeling and Probabilistic Machine Learning with Theano"
 AUTHOR = 'PyMC Developers'
 AUTHOR_EMAIL = 'pymc.devs@gmail.com'
@@ -36,7 +36,7 @@ with open(REQUIREMENTS_FILE) as f:
 test_reqs = ['pytest', 'pytest-cov']
 
 def get_version():
-    VERSIONFILE = join('pymc3', '__init__.py')
+    VERSIONFILE = join('pymc3_ext', '__init__.py')
     lines = open(VERSIONFILE, 'rt').readlines()
     version_regex = r"^__version__ = ['\"]([^'\"]*)['\"]"
     for line in lines:

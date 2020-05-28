@@ -6,7 +6,7 @@ NOTEBOOK_DIR=${NOTEBOOK_DIR:-$SRC_DIR/notebooks}
 TOKEN=$(openssl rand -hex 24)
 CONTAINER_NAME=${CONTAINER_NAME:-pymc3}
 
-# stop and remove previous instances of the pymc3 container to avoid naming conflicts
+# stop and remove previous instances of the pymc3_ext container to avoid naming conflicts
 if [[ $(docker ps -aq -f name=${CONTAINER_NAME}) ]]; then
    echo "Shutting down and removing previous instance of ${CONTAINER_NAME} container..."
    docker rm -f ${CONTAINER_NAME}

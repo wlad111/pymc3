@@ -3,7 +3,7 @@ import timeit
 
 import numpy as np
 import pandas as pd
-import pymc3 as pm
+import pymc3_ext as pm
 import theano
 import theano.tensor as tt
 
