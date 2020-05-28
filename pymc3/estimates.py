@@ -27,3 +27,35 @@ def _estimate_numenator(score_trace, mask, weights):
 
 def _estimate_denominator(score_trace, mask, weights):
     return np.mean(1 / weights[score_trace])
+
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
+def varianceOBM(score_trace, weights, left, right):
+    mask = interval_mask(score_trace, left, right)
+
+    h1 = _estimate_numenator(score_trace, mask, weights)
+    h2 = _estimate_denominator(score_trace, mask, weights)
+
+    num_arr = mask / weights[score_trace]
+    denom_arr = 1/ weights[score_trace]
+
+    N = score_trace.size
+    batch_size = int(np.sqrt(N))
+
+    batches_num = moving_average(num_arr, batch_size)
+    batches_denom = moving_average(denom_arr, batch_size)
+
+    C = (N * batch_size) / (N - batch_size)
+
+    obm_num = C * np.mean((batches_num - h1) ** 2)
+    obm_denom = C * np.mean((batches_denom - h2) ** 2)
+    obm_cov = C * np.mean((batches_num - h1) * (batches_denom - h2))
+
+    grad = np.array([1/h2, -h1/(h2 ** 2)]).reshape(2)
+    cov_matrix = np.array([obm_num, obm_cov, obm_cov, obm_denom]).reshape(2, 2)
+
+    return np.dot(grad, np.matmul(cov_matrix, grad))
+

@@ -183,6 +183,7 @@ class WeightedScoreDistribution(Distribution):
         self.weights = theano.shared(np.log(weighting))
         self.cat = True
         self.default = default_val
+        self.shape = default_val.shape
         self.p = pfun
 
     def log_density(self, value):
@@ -473,7 +474,7 @@ class DensityDist(Distribution):
                             "DensityDist random method cannot "
                             "adapt to shape changes in the distribution's "
                             "shape, which sometimes are necessary for sampling "
-                            "when the model uses pymc3.Data or theano shared "
+                            "when the model uses pymc3-ext.Data or theano shared "
                             "tensors, or when the DensityDist has observed "
                             "values.\n"
                             "This check can be disabled by passing "
@@ -801,14 +802,14 @@ def _draw_value(param, point=None, givens=None, size=None):
 
     Parameters
     ----------
-    param : number, array like, theano variable or pymc3 random variable
+    param : number, array like, theano variable or pymc3-ext random variable
         The value or distribution. Constants or shared variables
         will be converted to an array and returned. Theano variables
-        are evaluated. If `param` is a pymc3 random variables, draw
+        are evaluated. If `param` is a pymc3-ext random variables, draw
         a new value from it and return that, unless a value is specified
         in `point`.
     point : dict, optional
-        A dictionary from pymc3 variable names to their values.
+        A dictionary from pymc3-ext variable names to their values.
     givens : dict, optional
         A dictionary from theano variables to their values. These values
         are used to evaluate `param` if it is a theano variable.

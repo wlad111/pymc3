@@ -1436,7 +1436,7 @@ class FreeCatRV(Factor, PyMC3CatVariable):
             self.shape = self.dshape
             self.dsize = int(np.prod(distribution.shape))
             self.distribution = distribution
-            self.tag.test_value = np.array(distribution.default).reshape(1)
+            self.tag.test_value = distribution.default
             self.dshape = self.tag.test_value.shape
             self.shape = self.dshape
             self.logp_elemwiset = self.distribution.logp(self)
