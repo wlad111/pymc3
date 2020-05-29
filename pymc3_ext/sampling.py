@@ -225,7 +225,11 @@ def wang_landau(
 
     logc = 1
     logw = dist.weights
-    his = np.zeros(11)
+
+    #TODO what if score space is not [0, shape]
+
+    his_ids = dist.shape[0]+1
+    his = np.zeros(his_ids)
 
     point = Point(start, model=model)
 
@@ -233,7 +237,7 @@ def wang_landau(
         for j in range(draws_per_it):
             if isflat(his):
                 logc /= 2
-                his = np.zeros(11)
+                his = np.zeros(his_ids)
                 break
             point = step.step(point) #or astep()?
             state = point[var.name]
@@ -796,8 +800,6 @@ def _iter_sample(
     try:
         step.tune = bool(tune)
         for i in range(draws):
-            if i % 10000 == 0:
-                print(i)
             if i == 0 and hasattr(step, "iter_count"):
                 step.iter_count = 0
             if i == tune:

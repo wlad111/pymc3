@@ -42,7 +42,7 @@ class string2:
 
     def __init__(self, length):
         self.n_letters = length
-        self.state_fixed = np.array(["A"] * dna_state.n_letters)
+        self.state_fixed = np.array(["A"] * self.n_letters)
         alphabet = frozenset("ATGC")
         self.letters_list = list(alphabet)
         self.proposed = 0
@@ -81,15 +81,15 @@ def weightingFunc(score):
 x = np.array(['AAAA'])
 y = shared(x)
 
-s2 = string2(10)
+s2 = string2(15)
 
 with pm.Model() as model:
     # x = pm.Normal('x', mu=100500, sigma=42)
     # trace = pm.sample(1000)
     # weights = wang_landau(...)
-    s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([2] * 11), cat=True,
-                                     default_val=string_fixed)
-    trace = pm.sample(1000000, cores=1, start={'S': string_fixed},
+    s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([2] * (s2.n_letters+1)), cat=True,
+                                     default_val=s2.state_fixed)
+    trace = pm.sample(1000000, cores=1, start={'S': s2.state_fixed},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=s2.proposal),
                       compute_convergence_checks=False, chains=1, wl_weights=True)
     weights = np.exp(s.distribution.weights.get_value())
@@ -97,7 +97,7 @@ with pm.Model() as model:
 # add probability estimation
 # TODO optimize it
 score_trace = np.array([s2.score(x) for x in trace['S']]).astype('int32')
-print("Estimated: ", estimates.estimate_between(score_trace, weights, 10, 11))
+print("Estimated: ", estimates.estimate_between(score_trace, weights, 15, 16))
 
-print("True answer is: ", 1/(4 ** 10))
-print("variance estimation: ", estimates.varianceOBM(score_trace, weights, 10, 11))
+print("True answer is: ", 1/(4 ** 15))
+print("variance estimation: ", estimates.varianceOBM(score_trace, weights, 15, 16))
