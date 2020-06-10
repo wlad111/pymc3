@@ -1,7 +1,6 @@
 import sys;
 
 print('Python %s on %s' % (sys.version, sys.platform))
-import os
 
 sys.path.insert(0, '../../')
 sys.path.append('../')
@@ -15,27 +14,6 @@ import theano.tensor as tt
 from theano import *
 import estimates
 
-
-class dna_state:
-    alphabet = frozenset("ATGC")
-
-    state_fixed = ["A"] * 10
-    n_letters = 10
-
-    def __init__(self, length):
-        dna_state.n_letters = length
-        dna_state.state_fixed = ["A"] * dna_state.n_letters
-
-    def score(state):
-        state = state[0]
-        return dna_state.n_letters - dna_state.n_letters * hamming(dna_state.state_fixed, list(state))
-
-    def proposal(state):
-        pos = np.random.choice(a=dna_state.n_letters, size=1)
-        state_new_l = list(np.copy(state)[0])
-        state_new_l[pos[0]] = np.random.choice(a=list(dna_state.alphabet), size=1)[0]
-        state_new = np.array(''.join(state_new_l)).reshape(1)
-        return state_new
 
 class string2:
 
@@ -61,14 +39,6 @@ class string2:
         self.proposed += 1
         return state
 
-Dna = dna_state(10)
-
-string_fixed = np.array(["A"] * 10)
-
-def score(state):
-    return
-
-
 def weightingFunc(score):
     return 100 if score == 10 else 2
 
@@ -81,13 +51,13 @@ def weightingFunc(score):
 x = np.array(['AAAA'])
 y = shared(x)
 
-s2 = string2(15)
+s2 = string2(30)
 
 with pm.Model() as model:
     # x = pm.Normal('x', mu=100500, sigma=42)
     # trace = pm.sample(1000)
     # weights = wang_landau(...)
-    s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([2] * (s2.n_letters+1)), cat=True,
+    s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([1] * (s2.n_letters+1)), cat=True,
                                      default_val=s2.state_fixed)
     trace = pm.sample(1000000, cores=1, start={'S': s2.state_fixed},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=s2.proposal),

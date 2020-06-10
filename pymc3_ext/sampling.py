@@ -213,7 +213,7 @@ def _print_step_hierarchy(s, level=0):
 def wang_landau(
         var, #пока одна переменная
         wl_iters=10,
-        draws_per_it=10000,
+        draws_per_it=50000,
         step=None,
         start=None,
         model=None
@@ -234,6 +234,7 @@ def wang_landau(
     point = Point(start, model=model)
 
     for i in range(wl_iters):
+        his = np.zeros(his_ids)
         for j in range(draws_per_it):
             if isflat(his):
                 logc /= 2
@@ -246,20 +247,21 @@ def wang_landau(
             lw[sc] -= logc
             logw.set_value(lw)
             his[sc] += 1
-    lw = logw.get_value()
-    lwmin = lw.min()
-    if lwmin < 0:
-        lw -= lwmin
-    else:
-        lw += lwmin
-    logw.set_value(lw)
+        lw = logw.get_value()
+        lwmin = lw.min()
+        if lwmin < 0:
+            lw -= lwmin
+        else:
+            lw += lwmin
+        logw.set_value(lw)
+
 
 
 
 def isflat(his):
     m = his.mean()
     cond = (his < 20)
-    cond2 = (abs(his - m) > 0.35*m)
+    cond2 = (abs(his - m) > 0.2*m)
     if any(cond) or any(cond2):
         return False
     else:
