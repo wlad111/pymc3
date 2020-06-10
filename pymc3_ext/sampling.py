@@ -212,7 +212,7 @@ def _print_step_hierarchy(s, level=0):
 
 def wang_landau(
         var, #пока одна переменная
-        wl_iters=10,
+        wl_iters=15,
         draws_per_it=50000,
         step=None,
         start=None,

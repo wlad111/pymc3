@@ -51,7 +51,7 @@ def weightingFunc(score):
 x = np.array(['AAAA'])
 y = shared(x)
 
-s2 = string2(30)
+s2 = string2(45)
 
 with pm.Model() as model:
     # x = pm.Normal('x', mu=100500, sigma=42)
