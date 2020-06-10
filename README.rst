@@ -1,3 +1,7 @@
+.. image:: https://zenodo.org/badge/231738459.svg
+   :target: https://zenodo.org/badge/latestdoi/231738459
+
+
 .. image:: https://cdn.rawgit.com/pymc-devs/pymc3/master/docs/logos/svg/PyMC3_banner.svg
     :height: 100px
     :alt: PyMC3 logo
