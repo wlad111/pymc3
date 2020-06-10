@@ -235,8 +235,10 @@ def wang_landau(
 
     for i in range(wl_iters):
         his = np.zeros(his_ids)
+        full_iterations = True
         for j in range(draws_per_it):
             if isflat(his):
+                full_iterations = False
                 logc /= 2
                 his = np.zeros(his_ids)
                 break
@@ -247,6 +249,10 @@ def wang_landau(
             lw[sc] -= logc
             logw.set_value(lw)
             his[sc] += 1
+
+        if full_iterations:
+            warnings.warn("Wang-Landau: Reached maximum iterations. Results may be incorrect. Consider increase draws_per_it parameter")
+
         lw = logw.get_value()
         lwmin = lw.min()
         if lwmin < 0:
