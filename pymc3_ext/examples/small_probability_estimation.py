@@ -13,6 +13,7 @@ import pymc3_ext as pm
 import theano.tensor as tt
 from theano import *
 import estimates
+import math
 
 
 class string2:
@@ -51,7 +52,7 @@ def weightingFunc(score):
 x = np.array(['AAAA'])
 y = shared(x)
 
-s2 = string2(45)
+s2 = string2(10)
 
 with pm.Model() as model:
     # x = pm.Normal('x', mu=100500, sigma=42)
@@ -59,15 +60,18 @@ with pm.Model() as model:
     # weights = wang_landau(...)
     s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([1] * (s2.n_letters+1)), cat=True,
                                      default_val=s2.state_fixed)
-    trace = pm.sample(1000000, cores=1, start={'S': s2.state_fixed},
+    trace = pm.sample(10000, cores=1, start={'S': s2.state_fixed},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=s2.proposal),
                       compute_convergence_checks=False, chains=1, wl_weights=True)
-    weights = np.exp(s.distribution.weights.get_value())
+    weights =   s.distribution.weights_dict
+
+weights_exp = {k: math.exp(v) for k, v in weights.items()}
+
 
 # add probability estimation
 # TODO optimize it
 score_trace = np.array([s2.score(x) for x in trace['S']]).astype('int32')
-print("Estimated: ", estimates.estimate_between(score_trace, weights, 15, 16))
+print("Estimated: ", estimates.estimate_between(score_trace, weights_exp, 10, 11))
 
 print("True answer is: ", 1/(4 ** 15))
 print("variance estimation: ", estimates.varianceOBM(score_trace, weights, 15, 16))

@@ -181,10 +181,14 @@ class WeightedScoreDistribution(Distribution):
         super().__init__(shape, dtype, testval, *args, **kwargs)
         self.scorer = scorer
         self.weights = theano.shared(np.log(weighting))
+        self.weights_dict = dict()
         self.cat = True
         self.default = default_val
         self.shape = default_val.shape
         self.p = pfun
+
+        self.probOp = FromFunctionOp(fn=self.log_density, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
+        self.wOp = FromFunctionOp(fn=self.get_weight, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
 
     def log_density(self, value):
         if self.p is None:
@@ -195,14 +199,22 @@ class WeightedScoreDistribution(Distribution):
     def get_score(self, value):
         return np.array(int(self.scorer(value)))
 
+    def get_weight(self, value):
+        score = self.scorer(value)
+        if score not in self.weights_dict:
+            self.weights_dict[score] = 0
+            return np.array(0).astype('float64')
+        else:
+            return np.array(self.weights_dict[score]).astype('float64')
+
     def logp(self, value):
-        probOp = FromFunctionOp(fn=self.log_density, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
-        probt = probOp(value)
+        #probOp = FromFunctionOp(fn=self.log_density, itypes=[theano.gof.generic], otypes=[tt.dscalar], infer_shape=None)
+        probt = self.probOp(value)
 
-        scoreOp = FromFunctionOp(fn=self.get_score, itypes=[theano.gof.generic], otypes=[tt.lscalar], infer_shape=None)
-        scoret = scoreOp(value)
+        #scoreOp = FromFunctionOp(fn=self.get_score, itypes=[theano.gof.generic], otypes=[tt.lscalar], infer_shape=None)
+        wt = self.wOp(value)
 
-        return self.weights[scoret] + probt
+        return wt + probt
 
 
 class Discrete(Distribution):

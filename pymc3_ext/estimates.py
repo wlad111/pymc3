@@ -12,8 +12,9 @@ def estimate_between(score_trace, weights, a, b):
     :param b:
     :return:
     """
+    w = np.array([weights[s] for s in score_trace])
     mask = interval_mask(score_trace, a, b)
-    return _estimate_numenator(score_trace, mask, weights) / _estimate_denominator(score_trace, mask, weights)
+    return _estimate_numenator(score_trace, mask, w) / _estimate_denominator(score_trace, mask, w)
 
 def interval_mask(score_trace, left, right):
     mask = np.array((score_trace >= left) & (score_trace < right))
@@ -23,10 +24,11 @@ def bool_func_mask(score_trace, weights, bool_func):
     pass
 
 def _estimate_numenator(score_trace, mask, weights):
-    return np.mean(mask / weights[score_trace])
+
+    return np.mean(mask / weights)
 
 def _estimate_denominator(score_trace, mask, weights):
-    return np.mean(1 / weights[score_trace])
+    return np.mean(1 / weights)
 
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)

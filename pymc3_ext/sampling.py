@@ -210,6 +210,8 @@ def _print_step_hierarchy(s, level=0):
         _log.info(">" * level + "{}: [{}]".format(s.__class__.__name__, varnames))
 
 
+
+
 def wang_landau(
         var, #пока одна переменная
         wl_iters=15,
@@ -219,47 +221,55 @@ def wang_landau(
         model=None
 ):
 
+    print("performing Wang-Landau algorithm")
+
     model = modelcontext(model)
 
     dist = var.distribution
 
     logc = 1
-    logw = dist.weights
+    #logw = dist.weights
 
     #TODO what if score space is not [0, shape]
 
-    his_ids = dist.shape[0]+1
-    his = np.zeros(his_ids)
+    his = dict()
 
     point = Point(start, model=model)
 
     for i in range(wl_iters):
-        his = np.zeros(his_ids)
+        his = dict()
+        for k in dist.weights_dict:
+            his[k] = 0
         full_iterations = True
         for j in range(draws_per_it):
-            if isflat(his):
+            if isflat(np.array(list(his.values()))):
                 full_iterations = False
                 logc /= 2
-                his = np.zeros(his_ids)
+                #his = np.zeros(his_ids)
                 break
             point = step.step(point) #or astep()?
             state = point[var.name]
-            sc = int(dist.scorer(state))
-            lw = logw.get_value()
-            lw[sc] -= logc
-            logw.set_value(lw)
-            his[sc] += 1
+            sc = dist.scorer(state)
+            dist.weights_dict[sc] -= logc
+            if sc not in his.keys():
+                his[sc] = 1
+            else:
+                his[sc] += 1
 
         if full_iterations:
             warnings.warn("Wang-Landau: Reached maximum iterations. Results may be incorrect. Consider increase draws_per_it parameter")
 
-        lw = logw.get_value()
-        lwmin = lw.min()
-        if lwmin < 0:
-            lw -= lwmin
-        else:
-            lw += lwmin
-        logw.set_value(lw)
+        lwmin = np.min(list(dist.weights_dict.values()))
+
+        for k in dist.weights_dict.keys():
+            dist.weights_dict[k] -= lwmin
+        # lw = logw.get_value()
+        # lwmin = lw.min()
+        # if lwmin < 0:
+        #     lw -= lwmin
+        # else:
+        #     lw += lwmin
+        # logw.set_value(lw)
 
 
 
