@@ -55,11 +55,7 @@ y = shared(x)
 s2 = string2(10)
 
 with pm.Model() as model:
-    # x = pm.Normal('x', mu=100500, sigma=42)
-    # trace = pm.sample(1000)
-    # weights = wang_landau(...)
-    s = pm.WeightedScoreDistribution('S', scorer=s2.score, weighting=np.array([1] * (s2.n_letters+1)), cat=True,
-                                     default_val=s2.state_fixed)
+    s = pm.WeightedScoreDistribution('S', default_val=s2.state_fixed, scorer=s2.score, cat=True)
     trace = pm.sample(10000, cores=1, start={'S': s2.state_fixed},
                       step=pm.GenericCatMetropolis(vars=[s], proposal=s2.proposal),
                       compute_convergence_checks=False, chains=1, wl_weights=True)

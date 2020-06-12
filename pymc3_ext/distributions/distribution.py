@@ -168,19 +168,9 @@ class NoDistribution(Distribution):
         return tt.zeros_like(x)
 
 class WeightedScoreDistribution(Distribution):
-    def __init__(self,
-                 scorer,
-                 weighting,
-                 pfun=None,
-                 shape=(),
-                 dtype=None,
-                 testval='',
-                 default_val=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, scorer, pfun=None, shape=(), dtype=None, testval='', default_val=None, *args, **kwargs):
         super().__init__(shape, dtype, testval, *args, **kwargs)
         self.scorer = scorer
-        self.weights = theano.shared(np.log(weighting))
         self.weights_dict = dict()
         self.cat = True
         self.default = default_val
