@@ -5,7 +5,7 @@ with open("README.rst", "r") as fh:
 
 setuptools.setup(
     name="pymc3_ext", # Replace with your own username
-    version="0.0.1",
+    version="0.2.1",
     author="Vladislav Strashko",
     author_email="wlad962961@gmail.com",
     description="PyMC3 extension for simulating non-numeri random variables",
